@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, formatEther, isAddress } from "viem";
 import { Navbar } from "@/components/Navbar";
@@ -9,13 +9,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FACTORY_ADDRESS, FACTORY_ABI, BUILDBACK_ABI } from "@/lib/contracts";
 import { Trophy, Lock, Unlock, CheckCircle, XCircle, Plus, Settings, DollarSign } from "lucide-react";
 
+// Component to fetch and display hackathon name
+function HackathonOption({ address }: { address: string }) {
+  const { data: hackathonData } = useReadContract({
+    address: address as `0x${string}`,
+    abi: BUILDBACK_ABI,
+    functionName: 'getHackathonDetails',
+  });
+
+  const details = hackathonData as any;
+  const name = details?.name || "Loading...";
+
+  return (
+    <>
+      {name} - {address.slice(0, 6)}...{address.slice(-4)}
+    </>
+  );
+}
+
 export default function Admin() {
   const { address } = useAccount();
   const { toast } = useToast();
+  const [selectedHackathon, setSelectedHackathon] = useState<string>("");
 
   // Check if user is factory owner
   const { data: factoryOwner } = useReadContract({
@@ -23,6 +43,22 @@ export default function Admin() {
     abi: FACTORY_ABI,
     functionName: 'owner',
   });
+
+  // Fetch all hackathons from factory
+  const { data: hackathons, refetch: refetchHackathons } = useReadContract({
+    address: FACTORY_ADDRESS,
+    abi: FACTORY_ABI,
+    functionName: 'getAllHackathons',
+  });
+
+  const hackathonList = (hackathons as string[]) || [];
+
+  // Auto-select first hackathon if available
+  useEffect(() => {
+    if (hackathonList.length > 0 && !selectedHackathon) {
+      setSelectedHackathon(hackathonList[0]);
+    }
+  }, [hackathonList.length]);
 
   const isFactoryOwner = address && factoryOwner && address.toLowerCase() === (factoryOwner as string).toLowerCase();
 
@@ -46,49 +82,89 @@ export default function Admin() {
             <p className="text-muted-foreground">Please connect your wallet to access the admin panel</p>
           </Card>
         ) : (
-          <Tabs defaultValue="hackathons" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-              <TabsTrigger value="hackathons">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Hackathon
-              </TabsTrigger>
-              <TabsTrigger value="manage">
-                <Settings className="w-4 h-4 mr-2" />
-                Manage
-              </TabsTrigger>
-              <TabsTrigger value="settle">
-                <Trophy className="w-4 h-4 mr-2" />
-                Settle Event
-              </TabsTrigger>
-              <TabsTrigger value="fees">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Withdraw Fees
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            {/* Hackathon Selector */}
+            {hackathonList.length > 0 && (
+              <Card className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="hackathon-select" className="mb-2 block">Select Hackathon</Label>
+                    <Select value={selectedHackathon} onValueChange={setSelectedHackathon}>
+                      <SelectTrigger id="hackathon-select">
+                        <SelectValue placeholder="Select a hackathon..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hackathonList.map((addr: string) => (
+                          <SelectItem key={addr} value={addr}>
+                            <HackathonOption address={addr} />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => refetchHackathons()}
+                    className="mt-6"
+                  >
+                    Refresh
+                  </Button>
+                </div>
+                {selectedHackathon && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Selected: {selectedHackathon}
+                  </p>
+                )}
+              </Card>
+            )}
 
-            <TabsContent value="hackathons">
-              <CreateHackathonTab isFactoryOwner={isFactoryOwner} />
-            </TabsContent>
+            <Tabs defaultValue="hackathons" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+                <TabsTrigger value="hackathons">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Hackathon
+                </TabsTrigger>
+                <TabsTrigger value="manage">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage
+                </TabsTrigger>
+                <TabsTrigger value="settle">
+                  <Trophy className="w-4 h-4 mr-2" />
+                  Settle Event
+                </TabsTrigger>
+                <TabsTrigger value="fees">
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Withdraw Fees
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="manage">
-              <ManageHackathonTab />
-            </TabsContent>
+              <TabsContent value="hackathons">
+                <CreateHackathonTab 
+                  isFactoryOwner={isFactoryOwner} 
+                  onHackathonCreated={() => refetchHackathons()}
+                />
+              </TabsContent>
 
-            <TabsContent value="settle">
-              <SettleEventTab />
-            </TabsContent>
+              <TabsContent value="manage">
+                <ManageHackathonTab hackathonAddress={selectedHackathon} />
+              </TabsContent>
 
-            <TabsContent value="fees">
-              <WithdrawFeesTab />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="settle">
+                <SettleEventTab hackathonAddress={selectedHackathon} />
+              </TabsContent>
+
+              <TabsContent value="fees">
+                <WithdrawFeesTab hackathonAddress={selectedHackathon} />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
       </main>
     </div>
   );
 }
 
-function CreateHackathonTab({ isFactoryOwner }: { isFactoryOwner: boolean }) {
+function CreateHackathonTab({ isFactoryOwner, onHackathonCreated }: { isFactoryOwner: boolean; onHackathonCreated: () => void }) {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -119,9 +195,12 @@ function CreateHackathonTab({ isFactoryOwner }: { isFactoryOwner: boolean }) {
     }
   };
 
-  if (isSuccess) {
-    toast({ title: "Success!", description: "Hackathon created successfully" });
-  }
+  useEffect(() => {
+    if (isSuccess) {
+      toast({ title: "Success!", description: "Hackathon created successfully" });
+      onHackathonCreated();
+    }
+  }, [isSuccess]);
 
   if (!isFactoryOwner) {
     return (
@@ -190,10 +269,9 @@ function CreateHackathonTab({ isFactoryOwner }: { isFactoryOwner: boolean }) {
   );
 }
 
-function ManageHackathonTab() {
+function ManageHackathonTab({ hackathonAddress }: { hackathonAddress: string }) {
   const { toast } = useToast();
   const { address } = useAccount();
-  const [hackathonAddress, setHackathonAddress] = useState("");
 
   const { data: projects } = useReadContract({
     address: hackathonAddress as `0x${string}`,
@@ -270,20 +348,13 @@ function ManageHackathonTab() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <Label htmlFor="hackathonAddress">Hackathon Contract Address</Label>
-        <Input
-          id="hackathonAddress"
-          value={hackathonAddress}
-          onChange={(e) => setHackathonAddress(e.target.value)}
-          placeholder="0x..."
-          className="mt-2"
-        />
-      </Card>
-
-      {isAddress(hackathonAddress) && (
-        <>
-          {!isOwner ? (
+      {!isAddress(hackathonAddress) ? (
+        <Card className="p-8 text-center">
+          <Settings className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">No Hackathon Selected</h2>
+          <p className="text-muted-foreground">Please select a hackathon from the dropdown above</p>
+        </Card>
+      ) : !isOwner ? (
             <Card className="p-8 text-center">
               <XCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
               <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
@@ -378,16 +449,13 @@ function ManageHackathonTab() {
               </Card>
             </>
           )}
-        </>
-      )}
     </div>
   );
 }
 
-function SettleEventTab() {
+function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
   const { toast } = useToast();
   const { address } = useAccount();
-  const [hackathonAddress, setHackathonAddress] = useState("");
   const [winners, setWinners] = useState([{ projectId: "", percentage: "" }]);
 
   const { data: owner } = useReadContract({
@@ -445,20 +513,13 @@ function SettleEventTab() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <Label htmlFor="settleAddress">Hackathon Contract Address</Label>
-        <Input
-          id="settleAddress"
-          value={hackathonAddress}
-          onChange={(e) => setHackathonAddress(e.target.value)}
-          placeholder="0x..."
-          className="mt-2"
-        />
-      </Card>
-
-      {isAddress(hackathonAddress) && (
-        <>
-          {!isOwner ? (
+      {!isAddress(hackathonAddress) ? (
+        <Card className="p-8 text-center">
+          <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">No Hackathon Selected</h2>
+          <p className="text-muted-foreground">Please select a hackathon from the dropdown above</p>
+        </Card>
+      ) : !isOwner ? (
             <Card className="p-8 text-center">
               <XCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
               <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
@@ -524,16 +585,13 @@ function SettleEventTab() {
               </div>
             </Card>
           )}
-        </>
-      )}
     </div>
   );
 }
 
-function WithdrawFeesTab() {
+function WithdrawFeesTab({ hackathonAddress }: { hackathonAddress: string }) {
   const { toast } = useToast();
   const { address } = useAccount();
-  const [hackathonAddress, setHackathonAddress] = useState("");
 
   const { data: owner } = useReadContract({
     address: hackathonAddress as `0x${string}`,
@@ -580,20 +638,13 @@ function WithdrawFeesTab() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <Label htmlFor="feesAddress">Hackathon Contract Address</Label>
-        <Input
-          id="feesAddress"
-          value={hackathonAddress}
-          onChange={(e) => setHackathonAddress(e.target.value)}
-          placeholder="0x..."
-          className="mt-2"
-        />
-      </Card>
-
-      {isAddress(hackathonAddress) && (
-        <>
-          {!isOwner ? (
+      {!isAddress(hackathonAddress) ? (
+        <Card className="p-8 text-center">
+          <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">No Hackathon Selected</h2>
+          <p className="text-muted-foreground">Please select a hackathon from the dropdown above</p>
+        </Card>
+      ) : !isOwner ? (
             <Card className="p-8 text-center">
               <XCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
               <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
@@ -628,8 +679,6 @@ function WithdrawFeesTab() {
               </div>
             </Card>
           )}
-        </>
-      )}
     </div>
   );
 }

@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, User, Zap, Plus } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TrendingUp, User, Zap, Plus, Lock } from 'lucide-react';
 import { BUILDBACK_ABI } from '@/lib/contracts';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,6 +46,15 @@ export default function HackathonDetail() {
     address: address as `0x${string}`,
     abi: BUILDBACK_ABI,
     functionName: 'registrationOpen',
+    query: {
+      enabled: !!address,
+    },
+  });
+
+  const { data: backingAllowed } = useReadContract({
+    address: address as `0x${string}`,
+    abi: BUILDBACK_ABI,
+    functionName: 'backingAllowed',
     query: {
       enabled: !!address,
     },
@@ -168,7 +178,14 @@ export default function HackathonDetail() {
                 <h1 className="text-4xl font-bold mb-2">{hackathon.name}</h1>
                 <p className="text-lg text-muted-foreground">{hackathon.description}</p>
               </div>
-              <Badge variant="default" className="text-lg px-4 py-2">Active</Badge>
+              <div className="flex gap-2">
+                <Badge variant={registrationOpen ? "default" : "secondary"}>
+                  Registration: {registrationOpen ? "Open" : "Closed"}
+                </Badge>
+                <Badge variant={backingAllowed ? "default" : "secondary"}>
+                  Backing: {backingAllowed ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
             </div>
             <div className="flex gap-8 mt-6">
               <div>
@@ -241,6 +258,16 @@ export default function HackathonDetail() {
               </DialogContent>
             </Dialog>
           </motion.div>
+        )}
+
+        {/* Backing Status Alert */}
+        {!backingAllowed && (
+          <Alert className="mb-8 border-yellow-500/50 bg-yellow-500/10">
+            <Lock className="w-4 h-4" />
+            <AlertDescription>
+              <strong>Backing is currently disabled.</strong> The admin needs to enable backing before you can back projects.
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Projects Grid */}
@@ -321,11 +348,11 @@ export default function HackathonDetail() {
                     ) : (
                       <Button 
                         onClick={() => setSelectedProject(Number(project.id))}
-                        disabled={!project.approved || !userAddress}
+                        disabled={!project.approved || !userAddress || !backingAllowed}
                         className="w-full"
                         variant="outline"
                       >
-                        Back This Project
+                        {!backingAllowed ? 'Backing Disabled' : 'Back This Project'}
                       </Button>
                     )}
                   </CardContent>
