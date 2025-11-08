@@ -89,10 +89,18 @@ This deploys the BuildBackFactory with official Circle USDC address: `0x54258902
 - `pause()` - Admin can pause contract
 - `emergencyRefund()` - Users get full refund (USDC + AVAX) if paused before settlement
 
+## Deployed Contracts
+
+**Avalanche Fuji Testnet:**
+- Factory: `0x730B769843216e73e1A0B488635642a64a401503`
+- USDC: `0x5425890298aed601595a70AB815c96711a31Bc65` (Official Circle)
+
+View on Snowtrace: https://testnet.snowtrace.io/address/0x730B769843216e73e1A0B488635642a64a401503
+
 ## Verify on Snowtrace
 
 ```bash
-npx hardhat verify --network fuji <FACTORY_ADDRESS> "0x5425890298aed601595a70AB815c96711a31Bc65"
+npx hardhat verify --network fuji 0x730B769843216e73e1A0B488635642a64a401503 "0x5425890298aed601595a70AB815c96711a31Bc65"
 ```
 
 ## Changes from Reference
