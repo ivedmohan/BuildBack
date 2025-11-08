@@ -7,9 +7,12 @@ import { Navbar } from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, User, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { TrendingUp, User, Zap, Plus } from 'lucide-react';
 import { BUILDBACK_ABI } from '@/lib/contracts';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +22,9 @@ export default function HackathonDetail() {
   const { toast } = useToast();
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [backAmount, setBackAmount] = useState('');
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
 
   const { data: hackathonData } = useReadContract({
     address: address as `0x${string}`,
@@ -35,6 +41,15 @@ export default function HackathonDetail() {
     },
   });
 
+  const { data: registrationOpen } = useReadContract({
+    address: address as `0x${string}`,
+    abi: BUILDBACK_ABI,
+    functionName: 'registrationOpen',
+    query: {
+      enabled: !!address,
+    },
+  });
+
   const { data: totalPool } = useReadContract({
     address: address as `0x${string}`,
     abi: BUILDBACK_ABI,
@@ -46,6 +61,50 @@ export default function HackathonDetail() {
 
   const { writeContract, data: hash } = useWriteContract();
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
+
+  const handleRegisterProject = async () => {
+    if (!projectName || !projectDescription) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (projectName.length > 50 || projectDescription.length > 500) {
+      toast({
+        title: "Text too long",
+        description: "Name max 50 chars, description max 500 chars",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      writeContract({
+        address: address as `0x${string}`,
+        abi: BUILDBACK_ABI,
+        functionName: 'registerProject',
+        args: [projectName, projectDescription],
+      } as any);
+
+      toast({
+        title: "Project registered!",
+        description: "Waiting for admin approval...",
+      });
+      
+      setRegisterDialogOpen(false);
+      setProjectName('');
+      setProjectDescription('');
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleBackProject = async (projectId: number) => {
     if (!backAmount || Number(backAmount) <= 0) {
@@ -125,6 +184,64 @@ export default function HackathonDetail() {
             </div>
           </div>
         </motion.div>
+
+        {/* Register Project Button */}
+        {registrationOpen && userAddress && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Dialog open={registerDialogOpen} onOpenChange={setRegisterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary hover:shadow-glow-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Register Your Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Register Your Project</DialogTitle>
+                  <DialogDescription>
+                    Submit your project to this hackathon. It will need admin approval before users can back it.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="projectName">Project Name</Label>
+                    <Input
+                      id="projectName"
+                      placeholder="My Awesome Project"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      maxLength={50}
+                    />
+                    <p className="text-xs text-muted-foreground">{projectName.length}/50 characters</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectDescription">Description</Label>
+                    <Textarea
+                      id="projectDescription"
+                      placeholder="Describe your project..."
+                      value={projectDescription}
+                      onChange={(e) => setProjectDescription(e.target.value)}
+                      maxLength={500}
+                      rows={4}
+                    />
+                    <p className="text-xs text-muted-foreground">{projectDescription.length}/500 characters</p>
+                  </div>
+                  <Button 
+                    onClick={handleRegisterProject} 
+                    disabled={isConfirming || !projectName || !projectDescription}
+                    className="w-full"
+                  >
+                    {isConfirming ? 'Registering...' : 'Register Project'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </motion.div>
+        )}
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

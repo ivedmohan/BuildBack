@@ -35,3 +35,6 @@ build
 # Bun
 .bun
 bun.lockb
+
+
+node_modules/
