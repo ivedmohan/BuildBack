@@ -29,6 +29,10 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     error ProjectNotApproved();
     error InvalidWinnerPercentages();
     error InsufficientAllowance();
+    error HackathonNotStarted();
+    error HackathonEnded();
+    error CannotRefundAfterSettlement();
+    error NoBackingToRefund();
 
     // Constants
     uint256 public constant PLATFORM_FEE_PERCENT = 2;
@@ -166,6 +170,8 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         if (!projects[projectId].approved) revert ProjectNotApproved();
         if (amount < MIN_BACKING) revert BackingTooSmall();
         if (eventSettled) revert EventAlreadySettled();
+        if (block.timestamp < hackathon.startTime) revert HackathonNotStarted();
+        if (block.timestamp > hackathon.endTime) revert HackathonEnded();
 
         // Transfer USDC from user to contract
         usdcToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -196,6 +202,7 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     function settleEvent(Winner[] calldata _winners) external onlyOwner {
         if (eventSettled) revert EventAlreadySettled();
         if (registrationOpen) revert RegistrationStillOpen();
+        if (block.timestamp < hackathon.endTime) revert HackathonNotStarted(); // Can only settle after event ends
 
         // Validate percentages sum to 100
         uint256 totalPercentage = 0;
@@ -340,6 +347,32 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         uint256 fees = (totalPool * PLATFORM_FEE_PERCENT) / 100;
         
         usdcToken.safeTransfer(owner(), fees);
+    }
+
+    /**
+     * @dev Emergency refund mechanism if hackathon is cancelled
+     * @notice Users can claim their full backing back if event not settled
+     */
+    function emergencyRefund() external nonReentrant whenPaused {
+        if (eventSettled) revert CannotRefundAfterSettlement();
+        
+        uint256 totalRefund = 0;
+
+        // Refund all user backings across all projects
+        for (uint256 i = 1; i <= projectCount; i++) {
+            Backing storage userBacking = userBackings[msg.sender][i];
+            if (userBacking.amount > 0 && !userBacking.claimed) {
+                totalRefund += userBacking.amount;
+                userBacking.claimed = true; // Mark as claimed to prevent double refund
+            }
+        }
+
+        if (totalRefund == 0) revert NoBackingToRefund();
+
+        // Transfer full refund (no fees taken)
+        usdcToken.safeTransfer(msg.sender, totalRefund);
+
+        emit RewardClaimed(msg.sender, totalRefund); // Reuse event for simplicity
     }
 
     /**
