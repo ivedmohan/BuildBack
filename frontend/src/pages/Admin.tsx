@@ -465,6 +465,13 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
     query: { enabled: isAddress(hackathonAddress) }
   });
 
+  const { data: projects } = useReadContract({
+    address: hackathonAddress as `0x${string}`,
+    abi: BUILDBACK_ABI,
+    functionName: 'getAllProjects',
+    query: { enabled: isAddress(hackathonAddress) }
+  });
+
   const { data: eventSettled } = useReadContract({
     address: hackathonAddress as `0x${string}`,
     abi: BUILDBACK_ABI,
@@ -475,6 +482,7 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
   const { writeContract, isPending } = useWriteContract();
 
   const isOwner = address && owner && address.toLowerCase() === (owner as string).toLowerCase();
+  const projectList = (projects as any[]) || [];
 
   const addWinner = () => {
     setWinners([...winners, { projectId: "", percentage: "" }]);
@@ -534,55 +542,75 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
           ) : (
             <Card className="p-6">
               <h3 className="text-xl font-bold mb-4">Declare Winners</h3>
-              <div className="space-y-4">
-                {winners.map((winner, index) => (
-                  <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1">
-                      <Label>Project ID</Label>
-                      <Input
-                        type="number"
-                        value={winner.projectId}
-                        onChange={(e) => updateWinner(index, 'projectId', e.target.value)}
-                        placeholder="1"
-                      />
+              {projectList.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No projects found. Projects need to be registered first.</p>
+              ) : (
+                <div className="space-y-4">
+                  {winners.map((winner, index) => (
+                    <div key={index} className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label>Select Project</Label>
+                        <Select
+                          value={winner.projectId}
+                          onValueChange={(value) => updateWinner(index, 'projectId', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a project..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projectList
+                              .filter((p: any) => p.approved)
+                              .map((project: any) => (
+                                <SelectItem key={project.id.toString()} value={project.id.toString()}>
+                                  #{project.id.toString()} - {project.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1">
+                        <Label>Prize Percentage</Label>
+                        <Input
+                          type="number"
+                          value={winner.percentage}
+                          onChange={(e) => updateWinner(index, 'percentage', e.target.value)}
+                          placeholder="50"
+                          min="0"
+                          max="100"
+                        />
+                      </div>
+                      {winners.length > 1 && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => removeWinner(index)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <Label>Prize Percentage</Label>
-                      <Input
-                        type="number"
-                        value={winner.percentage}
-                        onChange={(e) => updateWinner(index, 'percentage', e.target.value)}
-                        placeholder="50"
-                      />
-                    </div>
-                    {winners.length > 1 && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeWinner(index)}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button onClick={addWinner} variant="outline" className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Winner
-                </Button>
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Total: {winners.reduce((sum, w) => sum + Number(w.percentage || 0), 0)}%
-                  </p>
-                  <Button
-                    onClick={handleSettleEvent}
-                    disabled={isPending}
-                    className="w-full"
-                  >
-                    {isPending ? "Settling..." : "Settle Event"}
+                  ))}
+                  <Button onClick={addWinner} variant="outline" className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Winner
                   </Button>
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Total: {winners.reduce((sum, w) => sum + Number(w.percentage || 0), 0)}%
+                      {winners.reduce((sum, w) => sum + Number(w.percentage || 0), 0) === 100 && (
+                        <span className="text-green-500 ml-2">✓ Valid</span>
+                      )}
+                    </p>
+                    <Button
+                      onClick={handleSettleEvent}
+                      disabled={isPending || winners.some(w => !w.projectId || !w.percentage)}
+                      className="w-full"
+                    >
+                      {isPending ? "Settling..." : "Settle Event"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </Card>
           )}
     </div>
