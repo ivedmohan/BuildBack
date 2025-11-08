@@ -6,10 +6,13 @@ import "./BuildBack.sol";
 
 /**
  * @title BuildBackFactory
- * @dev Factory contract for creating multiple hackathon backing events
+ * @dev Factory contract for creating multiple hackathon backing events on Avalanche
  */
 contract BuildBackFactory is Ownable {
     error InvalidStringLength();
+
+    // USDC token address on Avalanche Fuji testnet
+    address public immutable usdcToken;
 
     // Array of all created hackathon contracts
     address[] public hackathons;
@@ -26,7 +29,9 @@ contract BuildBackFactory is Ownable {
         address indexed creator
     );
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address _usdcToken) Ownable(msg.sender) {
+        usdcToken = _usdcToken;
+    }
 
     /**
      * @dev Create a new hackathon backing event
@@ -48,6 +53,7 @@ contract BuildBackFactory is Ownable {
         // Deploy new BuildBack contract
         BuildBack newHackathon = new BuildBack(
             owner(),
+            usdcToken,
             name,
             description,
             startTime,

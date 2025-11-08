@@ -5,9 +5,9 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy:base-sepolia": "hardhat run scripts/deploy-factory.ts --network baseSepolia",
-    "deploy:base": "hardhat run scripts/deploy-factory.ts --network base",
-    "verify": "hardhat verify --network baseSepolia"
+    "deploy:fuji": "hardhat run scripts/deploy-factory.ts --network fuji",
+    "deploy:avalanche": "hardhat run scripts/deploy-factory.ts --network avalanche",
+    "verify": "hardhat verify --network fuji"
   },
   "keywords": [
     "base",

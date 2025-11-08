@@ -19,32 +19,23 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
     },
-    baseSepolia: {
-      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
-      chainId: 84532,
+    fuji: {
+      url: process.env.FUJI_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",
+      chainId: 43113,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 25000000000, // 25 gwei
     },
-    base: {
-      url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
-      chainId: 8453,
+    avalanche: {
+      url: process.env.AVALANCHE_RPC_URL || "https://api.avax.network/ext/bc/C/rpc",
+      chainId: 43114,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
     apiKey: {
-      baseSepolia: process.env.BASESCAN_API_KEY || "",
-      base: process.env.BASESCAN_API_KEY || "",
+      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY || "",
+      avalanche: process.env.SNOWTRACE_API_KEY || "",
     },
-    customChains: [
-      {
-        network: "baseSepolia",
-        chainId: 84532,
-        urls: {
-          apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org"
-        }
-      }
-    ]
   },
   paths: {
     sources: "./contracts",
