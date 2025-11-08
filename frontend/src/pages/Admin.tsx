@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { FACTORY_ADDRESS, FACTORY_ABI, BUILDBACK_ABI } from "@/lib/contracts";
 import { Trophy, Lock, Unlock, CheckCircle, XCircle, Plus, Settings, DollarSign } from "lucide-react";
@@ -479,6 +480,13 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
     query: { enabled: isAddress(hackathonAddress) }
   });
 
+  const { data: registrationOpen } = useReadContract({
+    address: hackathonAddress as `0x${string}`,
+    abi: BUILDBACK_ABI,
+    functionName: 'registrationOpen',
+    query: { enabled: isAddress(hackathonAddress) }
+  });
+
   const { writeContract, isPending } = useWriteContract();
 
   const isOwner = address && owner && address.toLowerCase() === (owner as string).toLowerCase();
@@ -542,6 +550,17 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
           ) : (
             <Card className="p-6">
               <h3 className="text-xl font-bold mb-4">Declare Winners</h3>
+              
+              {/* Warning about registration */}
+              {registrationOpen && (
+                <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10">
+                  <Lock className="w-4 h-4" />
+                  <AlertDescription>
+                    <strong>Registration is still open!</strong> You must close registration in the Manage tab before settling the event.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {projectList.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No projects found. Projects need to be registered first.</p>
               ) : (
@@ -603,10 +622,10 @@ function SettleEventTab({ hackathonAddress }: { hackathonAddress: string }) {
                     </p>
                     <Button
                       onClick={handleSettleEvent}
-                      disabled={isPending || winners.some(w => !w.projectId || !w.percentage)}
+                      disabled={isPending || winners.some(w => !w.projectId || !w.percentage) || Boolean(registrationOpen)}
                       className="w-full"
                     >
-                      {isPending ? "Settling..." : "Settle Event"}
+                      {isPending ? "Settling..." : registrationOpen ? "Close Registration First" : "Settle Event"}
                     </Button>
                   </div>
                 </div>
