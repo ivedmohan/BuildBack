@@ -116,9 +116,9 @@ function RewardCard({ address, userAddress, index }: { address: `0x${string}`; u
 
   if (!hackathonData || !rewardData) return null;
 
-  const [name] = hackathonData as [string, string, bigint, bigint];
-  const [, avaxReward] = rewardData as [bigint, bigint];
-  const hasReward = Number(avaxReward) > 0;
+  const hackathon = hackathonData as any;
+  const [usdcReward, avaxReward] = rewardData as [bigint, bigint];
+  const hasReward = Number(avaxReward) > 0 || Number(usdcReward) > 0;
 
   if (!hasReward) return null;
 
@@ -132,7 +132,7 @@ function RewardCard({ address, userAddress, index }: { address: `0x${string}`; u
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-2xl">{name}</CardTitle>
+              <CardTitle className="text-2xl">{hackathon.name}</CardTitle>
               <CardDescription>Hackathon reward available</CardDescription>
             </div>
             {isSettled && (
@@ -149,8 +149,17 @@ function RewardCard({ address, userAddress, index }: { address: `0x${string}`; u
                 <TrendingUp className="w-4 h-4" />
                 Your Reward
               </div>
-              <div className="text-4xl font-bold bg-gradient-accent bg-clip-text text-transparent">
-                {formatEther(avaxReward)} AVAX
+              <div className="space-y-1">
+                {Number(usdcReward) > 0 && (
+                  <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
+                    {(Number(usdcReward) / 1e6).toFixed(2)} USDC
+                  </div>
+                )}
+                {Number(avaxReward) > 0 && (
+                  <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
+                    {formatEther(avaxReward)} AVAX
+                  </div>
+                )}
               </div>
             </div>
             <Button

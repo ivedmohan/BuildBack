@@ -61,7 +61,13 @@ function HackathonCard({ address, index }: { address: `0x${string}`; index: numb
     functionName: 'projectCount',
   });
 
-  const { data: totalPool } = useReadContract({
+  const { data: totalUsdcPool } = useReadContract({
+    address,
+    abi: BUILDBACK_ABI,
+    functionName: 'totalUsdcPool',
+  });
+
+  const { data: totalAvaxPool } = useReadContract({
     address,
     abi: BUILDBACK_ABI,
     functionName: 'totalAvaxPool',
@@ -69,8 +75,8 @@ function HackathonCard({ address, index }: { address: `0x${string}`; index: numb
 
   if (!hackathonData) return null;
 
-  const [name, description, startTime, endTime] = hackathonData as [string, string, bigint, bigint];
-  const isActive = Date.now() / 1000 < Number(endTime);
+  const hackathon = hackathonData as any;
+  const isActive = Date.now() / 1000 < Number(hackathon.endTime);
 
   return (
     <motion.div
@@ -86,18 +92,22 @@ function HackathonCard({ address, index }: { address: `0x${string}`; index: numb
                 {isActive ? 'Active' : 'Ended'}
               </Badge>
             </div>
-            <CardTitle className="text-xl line-clamp-1">{name}</CardTitle>
-            <CardDescription className="line-clamp-2">{description}</CardDescription>
+            <CardTitle className="text-xl line-clamp-1">{hackathon.name}</CardTitle>
+            <CardDescription className="line-clamp-2">{hackathon.description}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4 mr-2" />
-                Ends {new Date(Number(endTime) * 1000).toLocaleDateString()}
+                Ends {new Date(Number(hackathon.endTime) * 1000).toLocaleDateString()}
               </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Trophy className="w-4 h-4 mr-2" />
-                {totalPool ? `${Number(totalPool) / 1e18} AVAX` : '0 AVAX'} Prize Pool
+              <div className="flex items-center text-sm">
+                <Trophy className="w-4 h-4 mr-2 text-primary" />
+                <span className="font-semibold text-primary">
+                  {totalUsdcPool ? `${Number(totalUsdcPool) / 1e6} USDC` : '0 USDC'}
+                  {' + '}
+                  {totalAvaxPool ? `${(Number(totalAvaxPool) / 1e18).toFixed(2)} AVAX` : '0 AVAX'}
+                </span>
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Users className="w-4 h-4 mr-2" />

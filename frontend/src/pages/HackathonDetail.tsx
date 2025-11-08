@@ -90,7 +90,7 @@ export default function HackathonDetail() {
     );
   }
 
-  const [name, description] = hackathonData as [string, string, bigint, bigint];
+  const hackathon = hackathonData as any;
 
   return (
     <div className="min-h-screen">
@@ -106,8 +106,8 @@ export default function HackathonDetail() {
           <div className="glass-card p-8 rounded-2xl">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-4xl font-bold mb-2">{name}</h1>
-                <p className="text-lg text-muted-foreground">{description}</p>
+                <h1 className="text-4xl font-bold mb-2">{hackathon.name}</h1>
+                <p className="text-lg text-muted-foreground">{hackathon.description}</p>
               </div>
               <Badge variant="default" className="text-lg px-4 py-2">Active</Badge>
             </div>
