@@ -29,14 +29,14 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     error ProjectNotApproved();
     error InvalidWinnerPercentages();
     error InsufficientAllowance();
-    error HackathonNotStarted();
-    error HackathonEnded();
+    error BackingNotAllowed();
     error CannotRefundAfterSettlement();
     error NoBackingToRefund();
 
     // Constants
     uint256 public constant PLATFORM_FEE_PERCENT = 2;
-    uint256 public constant MIN_BACKING = 1e6; // 1 USDC (6 decimals)
+    uint256 public constant MIN_BACKING_USDC = 1e6; // 1 USDC (6 decimals)
+    uint256 public constant MIN_BACKING_AVAX = 0.01 ether; // 0.01 AVAX
     uint256 public constant MAX_NAME_LENGTH = 50;
     uint256 public constant MAX_DESCRIPTION_LENGTH = 500;
     uint256 public constant MAX_HACKATHON_NAME_LENGTH = 100;
@@ -59,13 +59,15 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         string name;
         string description;
         address creator;
-        uint256 totalBacking;
+        uint256 totalUsdcBacking;
+        uint256 totalAvaxBacking;
         bool exists;
         bool approved;
     }
 
     struct Backing {
-        uint256 amount;
+        uint256 usdcAmount;
+        uint256 avaxAmount;
         bool claimed;
     }
 
@@ -82,18 +84,23 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     
     Winner[] public winners;
     uint256 public projectCount;
-    uint256 public totalPool;
+    uint256 public totalUsdcPool;
+    uint256 public totalAvaxPool;
     bool public registrationOpen;
+    bool public backingAllowed;  // Admin controls when backing is allowed
     bool public eventSettled;
 
     // Events
     event HackathonCreated(string name, string description, uint256 startTime, uint256 endTime);
     event ProjectRegistered(uint256 indexed projectId, string name, address indexed creator);
     event ProjectApproved(uint256 indexed projectId);
-    event ProjectBacked(address indexed backer, uint256 indexed projectId, uint256 amount);
+    event ProjectBackedWithUSDC(address indexed backer, uint256 indexed projectId, uint256 amount);
+    event ProjectBackedWithAVAX(address indexed backer, uint256 indexed projectId, uint256 amount);
     event RegistrationClosed();
+    event BackingEnabled();
+    event BackingDisabled();
     event EventSettled(Winner[] winners);
-    event RewardClaimed(address indexed user, uint256 amount);
+    event RewardClaimed(address indexed user, uint256 usdcAmount, uint256 avaxAmount);
 
     constructor(
         address _owner,
@@ -117,6 +124,7 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         });
 
         registrationOpen = true;
+        backingAllowed = false;  // Admin must enable backing manually
         eventSettled = false;
 
         emit HackathonCreated(name, description, startTime, endTime);
@@ -140,7 +148,8 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
             name: name,
             description: description,
             creator: msg.sender,
-            totalBacking: 0,
+            totalUsdcBacking: 0,
+            totalAvaxBacking: 0,
             exists: true,
             approved: false // Requires admin approval
         });
@@ -166,24 +175,60 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
      * @param amount Amount of USDC to back (in USDC's decimals, typically 6)
      */
     function backProject(uint256 projectId, uint256 amount) external whenNotPaused {
+        if (!backingAllowed) revert BackingNotAllowed();
         if (!projects[projectId].exists) revert ProjectNotFound();
         if (!projects[projectId].approved) revert ProjectNotApproved();
-        if (amount < MIN_BACKING) revert BackingTooSmall();
+        if (amount < MIN_BACKING_USDC) revert BackingTooSmall();
         if (eventSettled) revert EventAlreadySettled();
-        if (block.timestamp < hackathon.startTime) revert HackathonNotStarted();
-        if (block.timestamp > hackathon.endTime) revert HackathonEnded();
 
         // Transfer USDC from user to contract
         usdcToken.safeTransferFrom(msg.sender, address(this), amount);
 
         // Update or create backing
-        userBackings[msg.sender][projectId].amount += amount;
+        userBackings[msg.sender][projectId].usdcAmount += amount;
         
         // Update project and pool totals
-        projects[projectId].totalBacking += amount;
-        totalPool += amount;
+        projects[projectId].totalUsdcBacking += amount;
+        totalUsdcPool += amount;
 
-        emit ProjectBacked(msg.sender, projectId, amount);
+        emit ProjectBackedWithUSDC(msg.sender, projectId, amount);
+    }
+
+    /**
+     * @dev Back a project with native AVAX
+     * @param projectId ID of the project to back
+     */
+    function backProjectWithAVAX(uint256 projectId) external payable whenNotPaused {
+        if (!backingAllowed) revert BackingNotAllowed();
+        if (!projects[projectId].exists) revert ProjectNotFound();
+        if (!projects[projectId].approved) revert ProjectNotApproved();
+        if (msg.value < MIN_BACKING_AVAX) revert BackingTooSmall();
+        if (eventSettled) revert EventAlreadySettled();
+
+        // Update or create backing
+        userBackings[msg.sender][projectId].avaxAmount += msg.value;
+        
+        // Update project and pool totals
+        projects[projectId].totalAvaxBacking += msg.value;
+        totalAvaxPool += msg.value;
+
+        emit ProjectBackedWithAVAX(msg.sender, projectId, msg.value);
+    }
+
+    /**
+     * @dev Enable backing (admin only) - Opens backing phase
+     */
+    function enableBacking() external onlyOwner {
+        backingAllowed = true;
+        emit BackingEnabled();
+    }
+
+    /**
+     * @dev Disable backing (admin only) - Closes backing phase
+     */
+    function disableBacking() external onlyOwner {
+        backingAllowed = false;
+        emit BackingDisabled();
     }
 
     /**
@@ -202,7 +247,6 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     function settleEvent(Winner[] calldata _winners) external onlyOwner {
         if (eventSettled) revert EventAlreadySettled();
         if (registrationOpen) revert RegistrationStillOpen();
-        if (block.timestamp < hackathon.endTime) revert HackathonNotStarted(); // Can only settle after event ends
 
         // Validate percentages sum to 100
         uint256 totalPercentage = 0;
@@ -225,7 +269,8 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     function claimReward() external nonReentrant whenNotPaused {
         if (!eventSettled) revert EventAlreadySettled();
         
-        uint256 totalReward = 0;
+        uint256 totalUsdcReward = 0;
+        uint256 totalAvaxReward = 0;
 
         // Calculate rewards from all winning projects
         for (uint256 i = 0; i < winners.length; i++) {
@@ -234,38 +279,54 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
             
             Backing storage userBacking = userBackings[msg.sender][projectId];
             
-            if (userBacking.amount > 0 && !userBacking.claimed) {
-                uint256 winnerTotalBacking = projects[projectId].totalBacking;
-                
-                // Calculate this winner's prize pool
-                uint256 winnerPrizePool = (totalPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
-                
-                // Calculate user's share of this prize pool
-                uint256 reward = (userBacking.amount * winnerPrizePool) / winnerTotalBacking;
-                
-                totalReward += reward;
+            if (!userBacking.claimed && (userBacking.usdcAmount > 0 || userBacking.avaxAmount > 0)) {
+                // Calculate USDC rewards
+                if (userBacking.usdcAmount > 0) {
+                    uint256 winnerTotalUsdcBacking = projects[projectId].totalUsdcBacking;
+                    uint256 winnerUsdcPrizePool = (totalUsdcPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
+                    uint256 usdcReward = (userBacking.usdcAmount * winnerUsdcPrizePool) / winnerTotalUsdcBacking;
+                    totalUsdcReward += usdcReward;
+                }
+
+                // Calculate AVAX rewards
+                if (userBacking.avaxAmount > 0) {
+                    uint256 winnerTotalAvaxBacking = projects[projectId].totalAvaxBacking;
+                    uint256 winnerAvaxPrizePool = (totalAvaxPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
+                    uint256 avaxReward = (userBacking.avaxAmount * winnerAvaxPrizePool) / winnerTotalAvaxBacking;
+                    totalAvaxReward += avaxReward;
+                }
+
                 userBacking.claimed = true;
             }
         }
 
-        if (totalReward == 0) revert NoBackingOnWinner();
+        if (totalUsdcReward == 0 && totalAvaxReward == 0) revert NoBackingOnWinner();
 
-        // Transfer total USDC reward
-        usdcToken.safeTransfer(msg.sender, totalReward);
+        // Transfer USDC rewards
+        if (totalUsdcReward > 0) {
+            usdcToken.safeTransfer(msg.sender, totalUsdcReward);
+        }
 
-        emit RewardClaimed(msg.sender, totalReward);
+        // Transfer AVAX rewards
+        if (totalAvaxReward > 0) {
+            (bool success, ) = msg.sender.call{value: totalAvaxReward}("");
+            if (!success) revert TransferFailed();
+        }
+
+        emit RewardClaimed(msg.sender, totalUsdcReward, totalAvaxReward);
     }
 
     /**
      * @dev Get confidence score for a project (returns multiplier * 100)
      * @param projectId ID of the project
-     * @return Confidence score as percentage (e.g., 250 = 2.5x)
+     * @return usdcScore USDC confidence score
+     * @return avaxScore AVAX confidence score
      */
-    function getConfidenceScore(uint256 projectId) external view returns (uint256) {
-        if (!projects[projectId].exists) return 0;
-        if (projects[projectId].totalBacking == 0) return 0;
+    function getConfidenceScore(uint256 projectId) external view returns (uint256 usdcScore, uint256 avaxScore) {
+        if (!projects[projectId].exists) return (0, 0);
         
-        return (totalPool * 100) / projects[projectId].totalBacking;
+        usdcScore = projects[projectId].totalUsdcBacking == 0 ? 0 : (totalUsdcPool * 100) / projects[projectId].totalUsdcBacking;
+        avaxScore = projects[projectId].totalAvaxBacking == 0 ? 0 : (totalAvaxPool * 100) / projects[projectId].totalAvaxBacking;
     }
 
     /**
@@ -315,11 +376,14 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     /**
      * @dev Calculate expected reward for a user
      * @param user Address of the user
+     * @return usdcReward Expected USDC reward
+     * @return avaxReward Expected AVAX reward
      */
-    function calculateReward(address user) external view returns (uint256) {
-        if (!eventSettled) return 0;
+    function calculateReward(address user) external view returns (uint256 usdcReward, uint256 avaxReward) {
+        if (!eventSettled) return (0, 0);
         
-        uint256 totalReward = 0;
+        uint256 totalUsdcReward = 0;
+        uint256 totalAvaxReward = 0;
 
         for (uint256 i = 0; i < winners.length; i++) {
             uint256 projectId = winners[i].projectId;
@@ -327,15 +391,26 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
             
             Backing memory userBacking = userBackings[user][projectId];
             
-            if (userBacking.amount > 0 && !userBacking.claimed) {
-                uint256 winnerTotalBacking = projects[projectId].totalBacking;
-                uint256 winnerPrizePool = (totalPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
-                uint256 reward = (userBacking.amount * winnerPrizePool) / winnerTotalBacking;
-                totalReward += reward;
+            if (!userBacking.claimed) {
+                // USDC rewards
+                if (userBacking.usdcAmount > 0) {
+                    uint256 winnerTotalUsdcBacking = projects[projectId].totalUsdcBacking;
+                    uint256 winnerUsdcPrizePool = (totalUsdcPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
+                    uint256 reward = (userBacking.usdcAmount * winnerUsdcPrizePool) / winnerTotalUsdcBacking;
+                    totalUsdcReward += reward;
+                }
+
+                // AVAX rewards
+                if (userBacking.avaxAmount > 0) {
+                    uint256 winnerTotalAvaxBacking = projects[projectId].totalAvaxBacking;
+                    uint256 winnerAvaxPrizePool = (totalAvaxPool * percentage * (100 - PLATFORM_FEE_PERCENT)) / 10000;
+                    uint256 reward = (userBacking.avaxAmount * winnerAvaxPrizePool) / winnerTotalAvaxBacking;
+                    totalAvaxReward += reward;
+                }
             }
         }
 
-        return totalReward;
+        return (totalUsdcReward, totalAvaxReward);
     }
 
     /**
@@ -344,9 +419,17 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     function withdrawFees() external onlyOwner {
         if (!eventSettled) revert EventAlreadySettled();
         
-        uint256 fees = (totalPool * PLATFORM_FEE_PERCENT) / 100;
+        uint256 usdcFees = (totalUsdcPool * PLATFORM_FEE_PERCENT) / 100;
+        uint256 avaxFees = (totalAvaxPool * PLATFORM_FEE_PERCENT) / 100;
         
-        usdcToken.safeTransfer(owner(), fees);
+        if (usdcFees > 0) {
+            usdcToken.safeTransfer(owner(), usdcFees);
+        }
+
+        if (avaxFees > 0) {
+            (bool success, ) = owner().call{value: avaxFees}("");
+            if (!success) revert TransferFailed();
+        }
     }
 
     /**
@@ -356,23 +439,33 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
     function emergencyRefund() external nonReentrant whenPaused {
         if (eventSettled) revert CannotRefundAfterSettlement();
         
-        uint256 totalRefund = 0;
+        uint256 totalUsdcRefund = 0;
+        uint256 totalAvaxRefund = 0;
 
         // Refund all user backings across all projects
         for (uint256 i = 1; i <= projectCount; i++) {
             Backing storage userBacking = userBackings[msg.sender][i];
-            if (userBacking.amount > 0 && !userBacking.claimed) {
-                totalRefund += userBacking.amount;
+            if (!userBacking.claimed && (userBacking.usdcAmount > 0 || userBacking.avaxAmount > 0)) {
+                totalUsdcRefund += userBacking.usdcAmount;
+                totalAvaxRefund += userBacking.avaxAmount;
                 userBacking.claimed = true; // Mark as claimed to prevent double refund
             }
         }
 
-        if (totalRefund == 0) revert NoBackingToRefund();
+        if (totalUsdcRefund == 0 && totalAvaxRefund == 0) revert NoBackingToRefund();
 
-        // Transfer full refund (no fees taken)
-        usdcToken.safeTransfer(msg.sender, totalRefund);
+        // Transfer USDC refund
+        if (totalUsdcRefund > 0) {
+            usdcToken.safeTransfer(msg.sender, totalUsdcRefund);
+        }
 
-        emit RewardClaimed(msg.sender, totalRefund); // Reuse event for simplicity
+        // Transfer AVAX refund
+        if (totalAvaxRefund > 0) {
+            (bool success, ) = msg.sender.call{value: totalAvaxRefund}("");
+            if (!success) revert TransferFailed();
+        }
+
+        emit RewardClaimed(msg.sender, totalUsdcRefund, totalAvaxRefund);
     }
 
     /**
