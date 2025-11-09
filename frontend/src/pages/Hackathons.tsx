@@ -18,19 +18,19 @@ export default function Hackathons() {
     <div className="min-h-screen">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
+          className="mb-8 sm:mb-12"
         >
-          <h1 className="text-5xl font-bold mb-4">Active Hackathons</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">Active Hackathons</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
             Browse ongoing hackathons and back your favorite projects
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {hackathonAddresses && Array.isArray(hackathonAddresses) && hackathonAddresses.map((address, i) => (
             <HackathonCard key={address} address={address} index={i} />
           ))}

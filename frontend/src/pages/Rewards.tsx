@@ -35,19 +35,19 @@ export default function Rewards() {
     <div className="min-h-screen">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
+          className="mb-8 sm:mb-12"
         >
-          <h1 className="text-5xl font-bold mb-4">My Rewards</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">My Rewards</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
             View and claim your earned rewards from backed projects
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-6 max-w-4xl">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 max-w-4xl">
           {hackathonAddresses && Array.isArray(hackathonAddresses) && hackathonAddresses.map((hackathonAddress, i) => (
             <RewardCard key={hackathonAddress} address={hackathonAddress} userAddress={address} index={i} />
           ))}
@@ -129,34 +129,34 @@ function RewardCard({ address, userAddress, index }: { address: `0x${string}`; u
       transition={{ delay: index * 0.1 }}
     >
       <Card className="glass-card border-border">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl">{hackathon.name}</CardTitle>
-              <CardDescription>Hackathon reward available</CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+            <div className="flex-1">
+              <CardTitle className="text-xl sm:text-2xl">{hackathon.name}</CardTitle>
+              <CardDescription className="text-sm">Hackathon reward available</CardDescription>
             </div>
             {isSettled && (
-              <div className="px-3 py-1 rounded-full bg-gradient-accent text-accent-foreground text-sm font-medium">
+              <div className="px-3 py-1 rounded-full bg-gradient-accent text-accent-foreground text-xs sm:text-sm font-medium self-start">
                 Settled
               </div>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="text-xs sm:text-sm text-muted-foreground mb-1 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
                 Your Reward
               </div>
               <div className="space-y-1">
                 {Number(usdcReward) > 0 && (
-                  <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
                     {(Number(usdcReward) / 1e6).toFixed(2)} USDC
                   </div>
                 )}
                 {Number(avaxReward) > 0 && (
-                  <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
                     {formatEther(avaxReward)} AVAX
                   </div>
                 )}
@@ -165,7 +165,7 @@ function RewardCard({ address, userAddress, index }: { address: `0x${string}`; u
             <Button
               onClick={handleClaim}
               disabled={isConfirming || !isSettled}
-              className="bg-gradient-accent hover:shadow-glow-accent"
+              className="bg-gradient-accent hover:shadow-glow-accent w-full sm:w-auto text-sm sm:text-base"
               size="lg"
             >
               <Trophy className="w-4 h-4 mr-2" />

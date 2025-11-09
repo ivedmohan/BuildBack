@@ -165,20 +165,20 @@ export default function HackathonDetail() {
     <div className="min-h-screen">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 sm:py-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
+          className="mb-8 sm:mb-12"
         >
-          <div className="glass-card p-8 rounded-2xl">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">{hackathon.name}</h1>
-                <p className="text-lg text-muted-foreground">{hackathon.description}</p>
+          <div className="glass-card p-4 sm:p-6 md:p-8 rounded-2xl">
+            <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-3">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">{hackathon.name}</h1>
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground">{hackathon.description}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Badge variant={registrationOpen ? "default" : "secondary"}>
                   Registration: {registrationOpen ? "Open" : "Closed"}
                 </Badge>
@@ -187,16 +187,16 @@ export default function HackathonDetail() {
                 </Badge>
               </div>
             </div>
-            <div className="flex gap-8 mt-6">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mt-6">
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Total Prize Pool</div>
-                <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
+                <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Prize Pool</div>
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">
                   {totalPool ? formatEther(totalPool as bigint) : '0'} AVAX
                 </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Projects</div>
-                <div className="text-3xl font-bold">{projects && Array.isArray(projects) ? projects.length : 0}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground mb-1">Projects</div>
+                <div className="text-2xl sm:text-3xl font-bold">{projects && Array.isArray(projects) ? projects.length : 0}</div>
               </div>
             </div>
           </div>
@@ -207,11 +207,11 @@ export default function HackathonDetail() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-6 sm:mb-8"
           >
             <Dialog open={registerDialogOpen} onOpenChange={setRegisterDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-primary hover:shadow-glow-primary">
+                <Button className="bg-gradient-primary hover:shadow-glow-primary w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Register Your Project
                 </Button>
@@ -281,7 +281,7 @@ export default function HackathonDetail() {
         )}
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {projects && Array.isArray(projects) && projects.map((project: any, i: number) => {
             const totalBacking = Number(project.totalAvaxBacking);
             const totalPoolNum = Number(totalPool || 0);
@@ -295,18 +295,18 @@ export default function HackathonDetail() {
                 transition={{ delay: i * 0.1 }}
               >
                 <Card className="glass-card border-border hover:border-primary/50 transition-all">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
+                  <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">{project.name}</CardTitle>
-                        <CardDescription>{project.description}</CardDescription>
+                        <CardTitle className="text-lg sm:text-xl mb-2">{project.name}</CardTitle>
+                        <CardDescription className="text-sm">{project.description}</CardDescription>
                       </div>
                       {project.approved && (
-                        <Badge variant="default" className="ml-2">Approved</Badge>
+                        <Badge variant="default" className="self-start">Approved</Badge>
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 p-4 sm:p-6">
                     <div>
                       <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-muted-foreground flex items-center gap-1">
@@ -337,12 +337,13 @@ export default function HackathonDetail() {
                           onChange={(e) => setBackAmount(e.target.value)}
                           step="0.01"
                           min="0.01"
+                          className="text-sm sm:text-base"
                         />
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button 
                             onClick={() => handleBackProject(Number(project.id))}
                             disabled={isConfirming || !userAddress}
-                            className="flex-1 bg-gradient-primary hover:shadow-glow-primary"
+                            className="flex-1 bg-gradient-primary hover:shadow-glow-primary text-sm sm:text-base"
                           >
                             <Zap className="w-4 h-4 mr-2" />
                             {isConfirming ? 'Confirming...' : 'Confirm Support'}
@@ -350,6 +351,7 @@ export default function HackathonDetail() {
                           <Button 
                             variant="outline" 
                             onClick={() => setSelectedProject(null)}
+                            className="text-sm sm:text-base"
                           >
                             Cancel
                           </Button>
@@ -359,7 +361,7 @@ export default function HackathonDetail() {
                       <Button 
                         onClick={() => setSelectedProject(Number(project.id))}
                         disabled={!project.approved || !userAddress || !backingAllowed}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                         variant="outline"
                       >
                         {!backingAllowed ? 'Support Disabled' : 'Support This Project'}

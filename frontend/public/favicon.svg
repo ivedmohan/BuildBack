@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="rocketGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rocket body -->
+  <path d="M32 8 L38 28 L38 48 L26 48 L26 28 Z" fill="url(#rocketGradient)" stroke="#4a5568" stroke-width="1.5"/>
+  
+  <!-- Rocket nose cone -->
+  <path d="M32 8 L38 28 L26 28 Z" fill="#f56565" stroke="#c53030" stroke-width="1.5"/>
+  
+  <!-- Window -->
+  <circle cx="32" cy="36" r="4" fill="#90cdf4" stroke="#2c5282" stroke-width="1"/>
+  
+  <!-- Left fin -->
+  <path d="M26 38 L18 48 L26 48 Z" fill="#fc8181" stroke="#c53030" stroke-width="1.5"/>
+  
+  <!-- Right fin -->
+  <path d="M38 38 L46 48 L38 48 Z" fill="#fc8181" stroke="#c53030" stroke-width="1.5"/>
+  
+  <!-- Flames -->
+  <ellipse cx="28" cy="52" rx="3" ry="6" fill="#fbbf24" opacity="0.9"/>
+  <ellipse cx="32" cy="54" rx="3" ry="8" fill="#f59e0b" opacity="0.9"/>
+  <ellipse cx="36" cy="52" rx="3" ry="6" fill="#fbbf24" opacity="0.9"/>
+</svg>
