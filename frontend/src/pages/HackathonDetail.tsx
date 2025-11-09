@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { TrendingUp, User, Zap, Plus, Lock } from 'lucide-react';
+import { TrendingUp, User, Zap, Plus, Lock, Info } from 'lucide-react';
 import { BUILDBACK_ABI } from '@/lib/contracts';
 import { useToast } from '@/hooks/use-toast';
 
@@ -270,6 +270,16 @@ export default function HackathonDetail() {
           </Alert>
         )}
 
+        {/* Developer Share Info */}
+        {backingAllowed && (
+          <Alert className="mb-8 border-blue-500/50 bg-blue-500/10">
+            <Info className="w-4 h-4" />
+            <AlertDescription>
+              <strong>Support Builders Directly!</strong> 10% of your contribution goes directly to the project creator, 88% to the prize pool for supporters of winners, 2% platform fee.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {projects && Array.isArray(projects) && projects.map((project: any, i: number) => {
@@ -335,7 +345,7 @@ export default function HackathonDetail() {
                             className="flex-1 bg-gradient-primary hover:shadow-glow-primary"
                           >
                             <Zap className="w-4 h-4 mr-2" />
-                            {isConfirming ? 'Confirming...' : 'Confirm Back'}
+                            {isConfirming ? 'Confirming...' : 'Confirm Support'}
                           </Button>
                           <Button 
                             variant="outline" 
@@ -352,7 +362,7 @@ export default function HackathonDetail() {
                         className="w-full"
                         variant="outline"
                       >
-                        {!backingAllowed ? 'Backing Disabled' : 'Back This Project'}
+                        {!backingAllowed ? 'Support Disabled' : 'Support This Project'}
                       </Button>
                     )}
                   </CardContent>

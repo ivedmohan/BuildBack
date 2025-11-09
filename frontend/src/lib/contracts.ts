@@ -1,6 +1,6 @@
 import { BuildBackABI, FactoryABI } from './abis.json';
 
-export const FACTORY_ADDRESS = '0x730B769843216e73e1A0B488635642a64a401503' as const;
+export const FACTORY_ADDRESS = '0x3B2510eB4F0208eF58d045F7Bcd16669842f9fBa' as const;
 export const USDC_ADDRESS = '0x5425890298aed601595a70AB815c96711a31Bc65' as const;
 
 export { BuildBackABI as BUILDBACK_ABI, FactoryABI as FACTORY_ABI };
