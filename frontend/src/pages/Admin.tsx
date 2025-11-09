@@ -66,12 +66,12 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+      <main className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Admin Dashboard
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage hackathons, approve projects, and settle events
           </p>
         </div>
@@ -86,10 +86,10 @@ export default function Admin() {
           <div className="space-y-6">
             {/* Hackathon Selector */}
             {hackathonList.length > 0 && (
-              <Card className="p-6">
-                <div className="flex items-center gap-4">
+              <Card className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                   <div className="flex-1">
-                    <Label htmlFor="hackathon-select" className="mb-2 block">Select Hackathon</Label>
+                    <Label htmlFor="hackathon-select" className="mb-2 block text-sm sm:text-base">Select Hackathon</Label>
                     <Select value={selectedHackathon} onValueChange={setSelectedHackathon}>
                       <SelectTrigger id="hackathon-select">
                         <SelectValue placeholder="Select a hackathon..." />
@@ -106,7 +106,7 @@ export default function Admin() {
                   <Button
                     variant="outline"
                     onClick={() => refetchHackathons()}
-                    className="mt-6"
+                    className="sm:mt-6 w-full sm:w-auto"
                   >
                     Refresh
                   </Button>
@@ -119,25 +119,30 @@ export default function Admin() {
               </Card>
             )}
 
-            <Tabs defaultValue="hackathons" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-                <TabsTrigger value="hackathons">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Hackathon
-                </TabsTrigger>
-                <TabsTrigger value="manage">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage
-                </TabsTrigger>
-                <TabsTrigger value="settle">
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Settle Event
-                </TabsTrigger>
-                <TabsTrigger value="fees">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Withdraw Fees
-                </TabsTrigger>
-              </TabsList>
+            <Tabs defaultValue="hackathons" className="space-y-4 sm:space-y-6">
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:w-full">
+                  <TabsTrigger value="hackathons" className="flex-1 sm:flex-none whitespace-nowrap">
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Create Hackathon</span>
+                    <span className="sm:hidden">Create</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="manage" className="flex-1 sm:flex-none whitespace-nowrap">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Manage
+                  </TabsTrigger>
+                  <TabsTrigger value="settle" className="flex-1 sm:flex-none whitespace-nowrap">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Settle Event</span>
+                    <span className="sm:hidden">Settle</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="fees" className="flex-1 sm:flex-none whitespace-nowrap">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Withdraw Fees</span>
+                    <span className="sm:hidden">Fees</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               <TabsContent value="hackathons">
                 <CreateHackathonTab 
