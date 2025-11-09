@@ -38,3 +38,4 @@ bun.lockb
 
 
 node_modules/
+.vercel

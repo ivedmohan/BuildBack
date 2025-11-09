@@ -1,9 +1,9 @@
 {
-  "factoryAddress": "0x730B769843216e73e1A0B488635642a64a401503",
+  "factoryAddress": "0x3B2510eB4F0208eF58d045F7Bcd16669842f9fBa",
   "usdcTokenAddress": "0x5425890298aed601595a70AB815c96711a31Bc65",
   "deployer": "0x84c2f35807fC555C4A06cC12Dc0aAf9d948FeE1d",
   "network": "fuji",
   "chainId": "43113",
-  "deployedAt": "2025-11-08T17:07:17.600Z",
-  "blockNumber": 47554997
+  "deployedAt": "2025-11-09T03:36:36.487Z",
+  "blockNumber": 47561420
 }
