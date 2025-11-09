@@ -88,8 +88,8 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       await hackathon.connect(backer1).backProject(1, toUSDC(100));
       
       const project = await hackathon.getProjectDetails(1);
-      expect(project.totalUsdcBacking).to.equal(toUSDC(100));
-      expect(await hackathon.totalUsdcPool()).to.equal(toUSDC(100));
+      expect(project.totalUsdcBacking).to.equal(toUSDC(88)); // 88% goes to pool
+      expect(await hackathon.totalUsdcPool()).to.equal(toUSDC(88));
     });
   });
 
@@ -109,8 +109,8 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       await hackathon.connect(backer1).backProjectWithAVAX(1, { value: toAVAX(1) });
       
       const project = await hackathon.getProjectDetails(1);
-      expect(project.totalAvaxBacking).to.equal(toAVAX(1));
-      expect(await hackathon.totalAvaxPool()).to.equal(toAVAX(1));
+      expect(project.totalAvaxBacking).to.equal(toAVAX(0.88)); // 88% goes to pool
+      expect(await hackathon.totalAvaxPool()).to.equal(toAVAX(0.88));
     });
 
     it("Should reject backing below minimum AVAX", async function () {
@@ -148,8 +148,8 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       await hackathon.connect(backer2).backProjectWithAVAX(3, { value: toAVAX(1.5) });
 
       // Check pools
-      expect(await hackathon.totalUsdcPool()).to.equal(toUSDC(1500));
-      expect(await hackathon.totalAvaxPool()).to.equal(toAVAX(3.5));
+      expect(await hackathon.totalUsdcPool()).to.equal(toUSDC(1320)); // 88% of 1500
+      expect(await hackathon.totalAvaxPool()).to.equal(toAVAX(3.08)); // 88% of 3.5
     });
 
     it("Should allow same user to back same project with both tokens", async function () {
@@ -161,12 +161,12 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       await hackathon.connect(backer1).backProjectWithAVAX(1, { value: toAVAX(1) });
 
       const backing = await hackathon.getUserBacking(backer1.address, 1);
-      expect(backing.usdcAmount).to.equal(toUSDC(500));
-      expect(backing.avaxAmount).to.equal(toAVAX(1));
+      expect(backing.usdcAmount).to.equal(toUSDC(440)); // 88% of 500
+      expect(backing.avaxAmount).to.equal(toAVAX(0.88)); // 88% of 1
 
       const project = await hackathon.getProjectDetails(1);
-      expect(project.totalUsdcBacking).to.equal(toUSDC(500));
-      expect(project.totalAvaxBacking).to.equal(toAVAX(1));
+      expect(project.totalUsdcBacking).to.equal(toUSDC(440));
+      expect(project.totalAvaxBacking).to.equal(toAVAX(0.88));
     });
   });
 
@@ -291,8 +291,8 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       const usdcAfter = await usdc.balanceOf(backer1.address);
       const avaxAfter = await ethers.provider.getBalance(backer1.address);
 
-      expect(usdcAfter - usdcBefore).to.equal(toUSDC(500));
-      expect(avaxAfter - avaxBefore).to.be.gt(toAVAX(0.99)); // Slightly less due to gas
+      expect(usdcAfter - usdcBefore).to.equal(toUSDC(440)); // 88% of 500
+      expect(avaxAfter - avaxBefore).to.be.gt(toAVAX(0.87)); // 88% of 1 minus gas
     });
   });
 
@@ -319,11 +319,11 @@ describe("BuildBack - Dual Token (USDC + AVAX) Test", function () {
       const ownerUsdcAfter = await usdc.balanceOf(owner.address);
       const ownerAvaxAfter = await ethers.provider.getBalance(owner.address);
 
-      // 2% fee on 1000 USDC = 20 USDC
-      expect(ownerUsdcAfter - ownerUsdcBefore).to.equal(toUSDC(20));
+      // Pool gets 88% of 1000 = 880 USDC, 2% fee on pool = 17.6 USDC
+      expect(ownerUsdcAfter - ownerUsdcBefore).to.equal(toUSDC(17.6));
       
-      // 2% fee on 10 AVAX = 0.2 AVAX (minus gas costs)
-      expect(ownerAvaxAfter - ownerAvaxBefore).to.be.gt(toAVAX(0.19));
+      // Pool gets 88% of 10 = 8.8 AVAX, 2% fee on pool = 0.176 AVAX (minus gas costs)
+      expect(ownerAvaxAfter - ownerAvaxBefore).to.be.gt(toAVAX(0.17));
     });
   });
 });

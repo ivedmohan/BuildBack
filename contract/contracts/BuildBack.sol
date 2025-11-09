@@ -35,6 +35,7 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint256 public constant PLATFORM_FEE_PERCENT = 2;
+    uint256 public constant DEVELOPER_SHARE_PERCENT = 10; // 10% goes directly to project creator
     uint256 public constant MIN_BACKING_USDC = 1e6; // 1 USDC (6 decimals)
     uint256 public constant MIN_BACKING_AVAX = 0.01 ether; // 0.01 AVAX
     uint256 public constant MAX_NAME_LENGTH = 50;
@@ -181,15 +182,22 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         if (amount < MIN_BACKING_USDC) revert BackingTooSmall();
         if (eventSettled) revert EventAlreadySettled();
 
+        // Calculate splits: 10% to developer, 88% to pool, 2% platform fee
+        uint256 developerShare = (amount * DEVELOPER_SHARE_PERCENT) / 100;
+        uint256 poolShare = (amount * (100 - PLATFORM_FEE_PERCENT - DEVELOPER_SHARE_PERCENT)) / 100;
+
         // Transfer USDC from user to contract
         usdcToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        // Update or create backing
-        userBackings[msg.sender][projectId].usdcAmount += amount;
+        // Transfer 10% directly to project creator
+        usdcToken.safeTransfer(projects[projectId].creator, developerShare);
+
+        // Update or create backing (only pool share counts for rewards)
+        userBackings[msg.sender][projectId].usdcAmount += poolShare;
         
-        // Update project and pool totals
-        projects[projectId].totalUsdcBacking += amount;
-        totalUsdcPool += amount;
+        // Update project and pool totals (only pool share)
+        projects[projectId].totalUsdcBacking += poolShare;
+        totalUsdcPool += poolShare;
 
         emit ProjectBackedWithUSDC(msg.sender, projectId, amount);
     }
@@ -205,12 +213,20 @@ contract BuildBack is Ownable, ReentrancyGuard, Pausable {
         if (msg.value < MIN_BACKING_AVAX) revert BackingTooSmall();
         if (eventSettled) revert EventAlreadySettled();
 
-        // Update or create backing
-        userBackings[msg.sender][projectId].avaxAmount += msg.value;
+        // Calculate splits: 10% to developer, 88% to pool, 2% platform fee
+        uint256 developerShare = (msg.value * DEVELOPER_SHARE_PERCENT) / 100;
+        uint256 poolShare = (msg.value * (100 - PLATFORM_FEE_PERCENT - DEVELOPER_SHARE_PERCENT)) / 100;
+
+        // Transfer 10% directly to project creator
+        (bool success, ) = projects[projectId].creator.call{value: developerShare}("");
+        if (!success) revert TransferFailed();
+
+        // Update or create backing (only pool share counts for rewards)
+        userBackings[msg.sender][projectId].avaxAmount += poolShare;
         
-        // Update project and pool totals
-        projects[projectId].totalAvaxBacking += msg.value;
-        totalAvaxPool += msg.value;
+        // Update project and pool totals (only pool share)
+        projects[projectId].totalAvaxBacking += poolShare;
+        totalAvaxPool += poolShare;
 
         emit ProjectBackedWithAVAX(msg.sender, projectId, msg.value);
     }
